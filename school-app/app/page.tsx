@@ -24,7 +24,6 @@ import { jsPDF } from 'jspdf';
 
 // --- TYPES ---
 
-// Represents a raw row from the CSV where keys are column headers
 export interface SheetRow {
   [key: string]: string;
 }
@@ -46,24 +45,15 @@ export interface StatMetric {
 // --- SERVICE LAYER ---
 
 const SHEET_ID = '19jf-Lx9OVRwh7j0ImcHBFG-dv0OBpeYyuoHl9irBWDg';
-
-// Use Google Visualization API endpoint for better CORS handling and reliability
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
 
-/**
- * Parses a CSV string into an array of objects.
- * Handles quoted fields and basic CSV nuances.
- */
 const parseCSV = (text: string): { headers: string[], rows: SheetRow[] } => {
   const lines = text.split(/\r\n|\n/);
   const result: SheetRow[] = [];
-  
-  // Filter empty lines
   const nonEmptyLines = lines.filter(line => line.trim() !== '');
   
   if (nonEmptyLines.length === 0) return { headers: [], rows: [] };
 
-  // Robust CSV splitter handling quotes
   const splitLine = (line: string): string[] => {
     const entries: string[] = [];
     let inQuote = false;
@@ -72,15 +62,14 @@ const parseCSV = (text: string): { headers: string[], rows: SheetRow[] } => {
     for (let i = 0; i < line.length; i++) {
       const char = line[i];
       if (char === '"') {
-        // Check for escaped quote ("")
         if (inQuote && line[i + 1] === '"') {
             current += '"';
-            i++; // Skip next quote
+            i++; 
         } else {
             inQuote = !inQuote;
         }
       } else if (char === ',' && !inQuote) {
-        entries.push(current); // Don't trim inside values, only headers might need it
+        entries.push(current); 
         current = '';
       } else {
         current += char;
@@ -99,11 +88,8 @@ const parseCSV = (text: string): { headers: string[], rows: SheetRow[] } => {
     const values = splitLine(currentLine);
     const obj: SheetRow = {};
     
-    // Map headers to values
     headers.forEach((header, index) => {
-      // Clean header name
       const key = header.trim();
-      // Basic cleanup of values
       obj[key] = values[index] || '';
     });
     
@@ -116,25 +102,13 @@ const parseCSV = (text: string): { headers: string[], rows: SheetRow[] } => {
 const fetchSheetData = async (): Promise<DataState> => {
   try {
     const response = await fetch(CSV_URL);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch sheet: ${response.status} ${response.statusText}`);
-    }
-    
+    if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`);
     const text = await response.text();
-    
-    // Check if response is HTML (indicates auth error or wrong ID)
     if (text.trim().startsWith('<!DOCTYPE html') || text.includes('<html')) {
-      throw new Error("Access denied or invalid Sheet ID. Please ensure the Google Sheet is 'Published to the Web'.");
+      throw new Error("Access denied. Please Publish to Web.");
     }
-
     const { headers, rows } = parseCSV(text);
-    
-    return {
-      headers,
-      rows,
-      lastUpdated: new Date()
-    };
+    return { headers, rows, lastUpdated: new Date() };
   } catch (error) {
     console.error("Error fetching sheet data:", error);
     throw error;
@@ -145,44 +119,35 @@ const fetchSheetData = async (): Promise<DataState> => {
 
 const LoadingSpinner: React.FC = () => (
   <div className="flex flex-col items-center justify-center h-64 space-y-4">
-    <div className="relative w-16 h-16">
-      <div className="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"></div>
-      <div className="absolute top-0 left-0 w-full h-full border-4 border-sky-500 rounded-full animate-spin border-t-transparent"></div>
-    </div>
-    <p className="text-gray-500 font-medium animate-pulse">Connecting to Google Sheets...</p>
+    <Loader2 className="h-12 w-12 animate-spin text-sky-600" />
+    <p className="text-gray-500 font-medium animate-pulse">Connecting to Database...</p>
   </div>
 );
 
 const Header: React.FC = () => {
   return (
-    <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-30 transition-all duration-200">
+    <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
           <div className="flex items-center gap-4">
-            {/* School Logo - Custom Generated O-NET Logo */}
-             <div className="h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 bg-gradient-to-br from-sky-500 to-sky-700 rounded-2xl flex flex-col items-center justify-center shadow-lg shadow-sky-500/20 border border-white/20 ring-1 ring-black/5">
-              <span className="text-white font-black text-lg sm:text-xl tracking-tight leading-none drop-shadow-sm">O-NET</span>
+             <div className="h-14 w-14 bg-gradient-to-br from-sky-500 to-sky-700 rounded-2xl flex flex-col items-center justify-center shadow-lg shadow-sky-500/20">
+              <span className="text-white font-black text-lg">O-NET</span>
               <div className="w-8 h-0.5 bg-white/30 rounded-full my-0.5"></div>
-              <span className="text-white/90 text-[9px] sm:text-[10px] font-bold tracking-widest">REPORT</span>
+              <span className="text-white/90 text-[9px] font-bold">REPORT</span>
             </div>
-            
             <div>
-              <h1 className="text-2xl font-bold text-sky-600 tracking-tight leading-none font-sans">โรงเรียนบ้านตะโละ</h1>
+              <h1 className="text-2xl font-bold text-sky-600">โรงเรียนบ้านตะโละ</h1>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mt-1">O-NET 67 Report</p>
             </div>
           </div>
-          
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-2 text-xs font-medium text-gray-600 bg-gray-100/50 px-3 py-1.5 rounded-full border border-gray-200/60">
+            <div className="hidden md:flex items-center gap-2 text-xs font-medium text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
               <span>Online</span>
             </div>
-            <button className="p-2 text-gray-400 hover:text-gray-900 transition-colors hover:bg-gray-100 rounded-lg">
-              <Grid size={20} />
-            </button>
           </div>
         </div>
       </div>
@@ -194,24 +159,20 @@ interface StatCardProps {
   title: string;
   value: string | number;
   icon: React.ReactNode;
-  colorClass: string; // e.g., 'bg-blue-50 text-blue-600'
+  colorClass: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon, colorClass }) => {
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:shadow-md">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-500">{title}</p>
-          <h3 className="text-2xl font-bold text-gray-900 mt-1">{value}</h3>
-        </div>
-        <div className={`p-3 rounded-lg ${colorClass}`}>
-          {icon}
-        </div>
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon, colorClass }) => (
+  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div className="flex items-start justify-between">
+      <div>
+        <p className="text-sm font-medium text-gray-500">{title}</p>
+        <h3 className="text-2xl font-bold text-gray-900 mt-1">{value}</h3>
       </div>
+      <div className={`p-3 rounded-lg ${colorClass}`}>{icon}</div>
     </div>
-  );
-};
+  </div>
+);
 
 interface DetailModalProps {
   isOpen: boolean;
@@ -222,36 +183,24 @@ interface DetailModalProps {
 const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, data }) => {
   const [isExporting, setIsExporting] = useState(false);
 
-  // Early return if no data or not open
   if (!isOpen || !data) return null;
 
-  // Helper to determine if a value is a score (numeric) for dashboard visualization
   const isNumeric = (val: string) => {
     if (!val) return false;
     const num = parseFloat(val);
-    // Check if it's a number, finite, and not just an empty string or whitespace
     return !isNaN(num) && isFinite(num) && val.trim() !== '';
   };
 
-  const getScoreColor = (percentage: number) => {
-    if (percentage >= 80) return 'text-emerald-600 bg-emerald-50 border-emerald-200';
-    if (percentage >= 70) return 'text-blue-600 bg-blue-50 border-blue-200';
-    if (percentage >= 50) return 'text-amber-600 bg-amber-50 border-amber-200';
-    return 'text-red-600 bg-red-50 border-red-200';
+  // --- FIX: Style Helper for PDF compatibility ---
+  // Return inline styles (Hex codes) instead of Tailwind classes to avoid 'lab()' errors
+  const getScoreStyles = (percentage: number) => {
+    if (percentage >= 80) return { bg: '#ecfdf5', text: '#059669', border: '#a7f3d0', bar: '#10b981' }; // Emerald
+    if (percentage >= 70) return { bg: '#eff6ff', text: '#2563eb', border: '#bfdbfe', bar: '#3b82f6' }; // Blue
+    if (percentage >= 50) return { bg: '#fffbeb', text: '#d97706', border: '#fde68a', bar: '#f59e0b' }; // Amber
+    return { bg: '#fef2f2', text: '#dc2626', border: '#fecaca', bar: '#ef4444' }; // Red
   };
 
-  const getProgressBarColor = (percentage: number) => {
-    if (percentage >= 80) return 'bg-emerald-500';
-    if (percentage >= 70) return 'bg-blue-500';
-    if (percentage >= 50) return 'bg-amber-500';
-    return 'bg-red-500';
-  };
-
-  // Determine max score based on column name
-  const getMaxScore = (key: string) => {
-    if (key.includes('ลำดับ')) return 20;
-    return 100;
-  };
+  const getMaxScore = (key: string) => key.includes('ลำดับ') ? 20 : 100;
 
   const handleDownloadPDF = async () => {
     setIsExporting(true);
@@ -259,36 +208,35 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, data }) => {
     
     if (element) {
       try {
-        // Wait for images/fonts to render fully
+        // Wait a bit for render
         await new Promise(resolve => setTimeout(resolve, 500));
 
         const canvas = await html2canvas(element, {
-          scale: 1.5, // Reduced scale for smaller file size
+          scale: 2, // Better quality
           useCORS: true,
           logging: false,
-          backgroundColor: '#ffffff'
+          backgroundColor: '#ffffff', // Force white background
+          onclone: (clonedDoc) => {
+            // Extra safety: Force capture element to have standard colors
+            const clonedElement = clonedDoc.getElementById('report-dashboard');
+            if (clonedElement) {
+                clonedElement.style.backgroundColor = '#ffffff';
+                clonedElement.style.color = '#000000';
+            }
+          }
         });
 
-        // Use JPEG format with 0.8 quality to reduce file size
-        const imgData = canvas.toDataURL('image/jpeg', 0.8);
-        
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: 'a4'
-        });
-
-        const imgWidth = 210; // A4 width in mm
-        const pageHeight = 297; // A4 height in mm
+        const imgData = canvas.toDataURL('image/jpeg', 0.9);
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const imgWidth = 210;
+        const pageHeight = 297;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
         let heightLeft = imgHeight;
         let position = 0;
 
         pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
 
-        // Handle multi-page if content is very long
         while (heightLeft >= 0) {
           position = heightLeft - imgHeight;
           pdf.addPage();
@@ -296,90 +244,81 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, data }) => {
           heightLeft -= pageHeight;
         }
 
-        pdf.save(`ONET_Report_67_${new Date().toISOString().slice(0,10)}.pdf`);
+        pdf.save(`ONET_Report_${new Date().getTime()}.pdf`);
       } catch (error) {
-        console.error("PDF Generation failed", error);
-        alert("เกิดข้อผิดพลาดในการสร้าง PDF: " + (error as Error).message);
+        console.error("PDF Failed", error);
+        alert("Error generating PDF: " + (error as Error).message);
       } finally {
         setIsExporting(false);
       }
     }
   };
 
-  // Separate data into potential scores and info
-  // Robustly cast entries to avoid TS issues
   const entries = Object.entries(data) as [string, string][];
-  
-  // Logic: Value is numeric and <= 100 is likely a score (or rank <= 20).
-  // Logic: Value > 100 (like ID, Year) or non-numeric is Info.
   const scoreEntries = entries.filter(([_, val]) => isNumeric(val) && parseFloat(val) <= 100);
   const infoEntries = entries.filter(([_, val]) => !isNumeric(val) || parseFloat(val) > 100);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-      <div 
-        className="absolute inset-0 bg-gray-900/70 backdrop-blur-sm transition-opacity" 
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      <div className="absolute inset-0 bg-gray-900/70 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
-        
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
         {/* Action Bar */}
         <div className="flex items-center justify-between p-4 bg-slate-800 text-white sticky top-0 z-20 shadow-md shrink-0">
           <div className="flex items-center gap-2">
             <FileText size={20} className="text-sky-400" />
-            <span className="font-medium">รายละเอียดผลสอบ (Dashboard)</span>
+            <span className="font-medium">รายละเอียดผลสอบ</span>
           </div>
           <div className="flex items-center gap-3">
             <button 
               onClick={handleDownloadPDF}
               disabled={isExporting}
-              className="flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-sky-900/20 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-70"
             >
               {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-              {isExporting ? 'กำลังสร้าง PDF...' : 'บันทึกเป็น PDF'}
+              {isExporting ? 'กำลังสร้าง PDF...' : 'บันทึก PDF'}
             </button>
-            <button 
-              onClick={onClose} 
-              className="p-2 rounded-full hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
-            >
+            <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-full">
               <X size={20} />
             </button>
           </div>
         </div>
 
-        {/* Scrollable Content Area */}
         <div className="overflow-y-auto flex-grow bg-slate-50">
-            {/* Dashboard Container for PDF capture */}
-            <div id="report-dashboard" className="p-8 bg-slate-50 min-h-full">
-                
-                {/* Header for PDF */}
-                <div className="mb-8 text-center border-b border-slate-200 pb-6">
-                     <h1 className="text-2xl font-bold text-slate-900">รายงานผลการทดสอบทางการศึกษาระดับชาติขั้นพื้นฐาน (O-NET)</h1>
-                     <p className="text-slate-500 mt-1">ชั้นประถมศึกษาปีที่ 6 ปีการศึกษา 2567 | โรงเรียนบ้านตะโละ</p>
+            {/* CRITICAL FIX: Explicitly set inline styles for background and color.
+              This prevents 'lab()' or 'oklch()' errors from Tailwind 4.
+            */}
+            <div 
+                id="report-dashboard" 
+                className="p-8 min-h-full" 
+                style={{ backgroundColor: '#ffffff', color: '#1e293b', fontFamily: 'Arial, sans-serif' }}
+            >
+                {/* Header PDF */}
+                <div className="mb-8 text-center border-b pb-6" style={{ borderColor: '#e2e8f0' }}>
+                      <h1 className="text-2xl font-bold" style={{ color: '#0f172a' }}>รายงานผลการทดสอบทางการศึกษาระดับชาติขั้นพื้นฐาน (O-NET)</h1>
+                      <p className="mt-1" style={{ color: '#64748b' }}>ชั้นประถมศึกษาปีที่ 6 ปีการศึกษา 2567 | โรงเรียนบ้านตะโละ</p>
                 </div>
 
-                {/* Student Info Section */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8">
-                    <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
-                        <User className="text-sky-600" size={22} />
+                {/* Student Info */}
+                <div className="rounded-xl p-6 mb-8 border" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
+                    <h3 className="text-lg font-bold pb-3 mb-4 flex items-center gap-2 border-b" style={{ color: '#1e293b', borderColor: '#f1f5f9' }}>
+                        <User size={22} style={{ color: '#0284c7' }} />
                         ข้อมูลส่วนตัวนักเรียน
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
                         {infoEntries.map(([key, value]) => (
-                            <div key={key} className="flex flex-col border-b border-slate-50 pb-2 last:border-0">
-                                <span className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">{key}</span>
-                                <span className="text-slate-900 font-semibold text-lg break-words">{value}</span>
+                            <div key={key} className="flex flex-col border-b pb-2 last:border-0" style={{ borderColor: '#f8fafc' }}>
+                                <span className="text-xs font-medium uppercase tracking-wider mb-1" style={{ color: '#64748b' }}>{key}</span>
+                                <span className="font-semibold text-lg break-words" style={{ color: '#0f172a' }}>{value}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* Scores Section */}
+                {/* Scores */}
                 <div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-5 flex items-center gap-2">
-                        <Award className="text-amber-500" size={22} />
+                    <h3 className="text-lg font-bold mb-5 flex items-center gap-2" style={{ color: '#1e293b' }}>
+                        <Award size={22} style={{ color: '#f59e0b' }} />
                         ผลการทดสอบรายวิชา
                     </h3>
                     
@@ -389,46 +328,58 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, data }) => {
                                 const rawScore = parseFloat(value);
                                 const maxScore = getMaxScore(key);
                                 const percentage = (rawScore / maxScore) * 100;
-                                
-                                // Format to 2 decimal places for scores, but 0 decimal places for 'ลำดับ' (Sequence)
                                 const isSequence = key.includes('ลำดับ');
                                 const formattedScore = isSequence ? rawScore.toFixed(0) : rawScore.toFixed(2);
+                                
+                                // Get Safe Hex Colors
+                                const styles = getScoreStyles(percentage);
 
                                 return (
-                                    <div key={key} className={`p-5 rounded-xl border ${getScoreColor(percentage)} bg-white shadow-sm relative overflow-hidden group transition-all`}>
-                                        <div className="relative z-10">
-                                            <p className="text-sm font-bold opacity-70 mb-2 uppercase tracking-wide truncate" title={key}>{key}</p>
-                                            <div className="flex items-end gap-2">
-                                                <span className="text-4xl font-black tracking-tight">{formattedScore}</span>
-                                                <span className="text-sm opacity-60 font-semibold mb-1.5">/ {maxScore}</span>
+                                    <div 
+                                        key={key} 
+                                        className="p-5 rounded-xl border shadow-sm relative overflow-hidden"
+                                        style={{ 
+                                            backgroundColor: styles.bg, 
+                                            borderColor: styles.border,
+                                            color: styles.text
+                                        }}
+                                    >
+                                            <div className="relative z-10">
+                                                <p className="text-sm font-bold opacity-70 mb-2 uppercase tracking-wide truncate" title={key}>{key}</p>
+                                                <div className="flex items-end gap-2">
+                                                    <span className="text-4xl font-black tracking-tight">{formattedScore}</span>
+                                                    <span className="text-sm opacity-60 font-semibold mb-1.5">/ {maxScore}</span>
+                                                </div>
+                                                
+                                                <div className="mt-4 w-full rounded-full h-2 overflow-hidden" style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}>
+                                                    <div 
+                                                        className="h-full rounded-full" 
+                                                        style={{ 
+                                                            width: `${Math.min(percentage, 100)}%`,
+                                                            backgroundColor: styles.bar 
+                                                        }}
+                                                    ></div>
+                                                </div>
                                             </div>
-                                            
-                                            <div className="mt-4 w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                                <div 
-                                                    className={`h-full rounded-full ${getProgressBarColor(percentage)} transition-all duration-1000 ease-out`} 
-                                                    style={{ width: `${Math.min(percentage, 100)}%` }}
-                                                ></div>
-                                            </div>
-                                        </div>
                                     </div>
                                 );
                             })}
                         </div>
                     ) : (
-                        <div className="p-8 text-center bg-white rounded-xl border border-dashed border-slate-300 text-slate-400">
+                        <div className="p-8 text-center rounded-xl border border-dashed" style={{ borderColor: '#cbd5e1', color: '#94a3b8' }}>
                             ไม่พบข้อมูลคะแนนสอบ
                         </div>
                     )}
                 </div>
                 
-                {/* Footer for PDF */}
-                <div className="mt-12 pt-6 border-t border-slate-200 flex justify-between items-end text-xs text-slate-400">
+                {/* Footer PDF */}
+                <div className="mt-12 pt-6 border-t flex justify-between items-end text-xs" style={{ borderColor: '#e2e8f0', color: '#94a3b8' }}>
                     <div>
                         <p>เอกสารนี้จัดทำโดยระบบรายงานผลออนไลน์</p>
-                        <p>วันที่ออกเอกสาร: {new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        <p>วันที่: {new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                     </div>
                     <div className="text-right">
-                        <p className="font-medium text-slate-500 text-sm">พัฒนาโดย ฝ่ายวิชาการ โรงเรียนบ้านตะโละ @2568</p>
+                        <p className="font-medium" style={{ color: '#64748b' }}>พัฒนาโดย ฝ่ายวิชาการ โรงเรียนบ้านตะโละ</p>
                     </div>
                 </div>
             </div>
@@ -454,8 +405,7 @@ export default function OnetReportPage() {
       const result = await fetchSheetData();
       setData(result);
     } catch (err) {
-      // Use the specific error message from the service if available to help debugging
-      const errorMessage = err instanceof Error ? err.message : "Unable to load data. Please check your internet connection or try again later.";
+      const errorMessage = err instanceof Error ? err.message : "Connection Failed";
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -466,12 +416,9 @@ export default function OnetReportPage() {
     loadData();
   }, []);
 
-  // Filter logic
   const filteredRows = useMemo(() => {
     if (!data) return [];
     const term = searchTerm.toLowerCase().trim();
-    
-    // If no search term, return empty array to hide results (search-first approach)
     if (!term) return [];
 
     return data.rows.filter(row => {
@@ -480,39 +427,16 @@ export default function OnetReportPage() {
     });
   }, [data, searchTerm]);
 
-  // Identifying columns for display 
   const columns = useMemo(() => {
     if (!data || data.headers.length === 0) return [];
     return data.headers;
   }, [data]);
 
-  const displayColumns = columns;
-
-  // Helper to format values for the table
   const formatDisplayValue = (key: string, value: string) => {
     const num = parseFloat(value);
-    
-    // If not a number or empty, return original
     if (isNaN(num) || value.trim() === '') return value;
-
-    // Exception: Sequence/Rank should be integer
-    if (key.includes('ลำดับ')) {
-      return num.toFixed(0);
-    }
-
-    // Exception: IDs, Codes, Years, Rooms etc. should not be formatted as score decimals
-    // We look for keywords often found in O-NET data headers
-    if (
-        key.includes('รหัส') || 
-        key.includes('เลข') || 
-        key.includes('ปี') || 
-        key.includes('ห้อง') || 
-        key.includes('ชั้น')
-    ) {
-        return value;
-    }
-
-    // Default behavior for numbers (presumably scores): 2 decimal places
+    if (key.includes('ลำดับ')) return num.toFixed(0);
+    if (key.includes('รหัส') || key.includes('เลข') || key.includes('ปี') || key.includes('ห้อง')) return value;
     return num.toFixed(2);
   };
 
@@ -532,22 +456,15 @@ export default function OnetReportPage() {
       <div className="min-h-screen bg-gray-50 font-sans">
         <Header />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="max-w-lg mx-auto bg-white shadow-xl rounded-2xl overflow-hidden">
-            <div className="p-8 text-center">
-              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
-                <AlertCircle className="h-8 w-8 text-red-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Connection Issue</h3>
-              <p className="text-red-500 font-medium mb-6 break-words">{error}</p>
-              
-              <button 
-                onClick={loadData}
-                className="w-full px-4 py-3 bg-sky-600 text-white font-semibold rounded-xl hover:bg-sky-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-sky-600/30"
-              >
-                <RefreshCcw size={20} />
-                Retry Connection
-              </button>
+          <div className="max-w-lg mx-auto bg-white shadow-xl rounded-2xl overflow-hidden p-8 text-center">
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
+              <AlertCircle className="h-8 w-8 text-red-600" />
             </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Connection Issue</h3>
+            <p className="text-red-500 font-medium mb-6">{error}</p>
+            <button onClick={loadData} className="w-full px-4 py-3 bg-sky-600 text-white font-semibold rounded-xl hover:bg-sky-700 transition-colors flex items-center justify-center gap-2 shadow-lg">
+              <RefreshCcw size={20} /> Retry Connection
+            </button>
           </div>
         </main>
       </div>
@@ -564,11 +481,9 @@ export default function OnetReportPage() {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 flex-grow w-full">
-        
-        {/* Hero / Search Section */}
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 lg:p-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
           <div className="max-w-4xl mx-auto text-center space-y-6">
-            <h2 className="text-2xl md:text-4xl font-bold text-sky-600 tracking-tight leading-tight">
+            <h2 className="text-2xl md:text-4xl font-bold text-sky-600 tracking-tight">
               Ordinary National Educational Test : O-NET
             </h2>
             <p className="text-slate-500 text-base md:text-lg max-w-2xl mx-auto">
@@ -591,31 +506,13 @@ export default function OnetReportPage() {
           </div>
         </div>
 
-        {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatCard 
-            title="Total Database" 
-            value={data?.rows.length || 0} 
-            icon={<Database size={24} />} 
-            colorClass="bg-blue-50 text-blue-600" 
-          />
-          <StatCard 
-            title="Results Found" 
-            value={filteredRows.length} 
-            icon={<ListFilter size={24} />} 
-            colorClass="bg-amber-50 text-amber-600" 
-          />
-           <StatCard 
-            title="System Status" 
-            value="Online" 
-            icon={<RefreshCcw size={24} />} 
-            colorClass="bg-emerald-50 text-emerald-600" 
-          />
+          <StatCard title="Total Database" value={data?.rows.length || 0} icon={<Database size={24} />} colorClass="bg-blue-50 text-blue-600" />
+          <StatCard title="Results Found" value={filteredRows.length} icon={<ListFilter size={24} />} colorClass="bg-amber-50 text-amber-600" />
+           <StatCard title="System Status" value="Online" icon={<RefreshCcw size={24} />} colorClass="bg-emerald-50 text-emerald-600" />
         </div>
 
-        {/* Data Table Logic */}
         {!searchTerm ? (
-           // IDLE STATE: Search term is empty
            <div className="py-12 flex flex-col items-center justify-center text-center text-slate-400">
              <div className="bg-white p-6 rounded-full shadow-sm border border-slate-100 mb-4">
                 <ArrowUpCircle size={48} className="text-slate-300 animate-bounce" />
@@ -624,43 +521,30 @@ export default function OnetReportPage() {
              <p className="text-sm">ระบบจะแสดงข้อมูลเมื่อมีการค้นหาเท่านั้น</p>
            </div>
         ) : (
-          // RESULTS STATE
           <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr>
-                    {displayColumns.map((header, idx) => (
-                      <th
-                        key={idx}
-                        scope="col"
-                        className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap"
-                      >
+                    {columns.map((header, idx) => (
+                      <th key={idx} scope="col" className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
                         {header}
                       </th>
                     ))}
-                    <th scope="col" className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">
-                      Action
-                    </th>
+                    <th scope="col" className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-slate-200">
                   {filteredRows.length > 0 ? (
                     filteredRows.map((row, rowIndex) => (
-                      <tr 
-                        key={rowIndex} 
-                        onClick={() => setSelectedRow(row)}
-                        className="hover:bg-sky-50/50 transition-colors cursor-pointer group"
-                      >
-                        {displayColumns.map((header, colIndex) => (
+                      <tr key={rowIndex} onClick={() => setSelectedRow(row)} className="hover:bg-sky-50/50 transition-colors cursor-pointer group">
+                        {columns.map((header, colIndex) => (
                           <td key={colIndex} className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
                             {formatDisplayValue(header, row[header])}
                           </td>
                         ))}
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button 
-                            className="text-sky-600 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 p-2 rounded-full transition-colors group-hover:scale-110"
-                          >
+                          <button className="text-sky-600 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 p-2 rounded-full transition-colors group-hover:scale-110">
                             <ChevronRight size={18} />
                           </button>
                         </td>
@@ -668,11 +552,10 @@ export default function OnetReportPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={displayColumns.length + 1} className="px-6 py-12 text-center text-slate-500">
+                      <td colSpan={columns.length + 1} className="px-6 py-12 text-center text-slate-500">
                         <div className="flex flex-col items-center justify-center">
                           <Search className="h-10 w-10 text-slate-300 mb-3" />
                           <p className="text-lg font-medium text-slate-600">ไม่พบข้อมูลที่ค้นหา</p>
-                          <p className="text-sm text-slate-400">กรุณาตรวจสอบตัวสะกดและลองใหม่อีกครั้ง</p>
                         </div>
                       </td>
                     </tr>
@@ -681,9 +564,7 @@ export default function OnetReportPage() {
               </table>
             </div>
             <div className="bg-slate-50 px-6 py-4 border-t border-slate-200">
-              <span className="text-sm text-slate-500">
-                Showing {filteredRows.length} result(s)
-              </span>
+              <span className="text-sm text-slate-500">Showing {filteredRows.length} result(s)</span>
             </div>
           </div>
         )}

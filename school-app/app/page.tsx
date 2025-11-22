@@ -17,7 +17,9 @@ import {
   FileText, 
   Loader2 
 } from 'lucide-react';
+// @ts-ignore
 import html2canvas from 'html2canvas';
+// @ts-ignore
 import { jsPDF } from 'jspdf';
 
 // --- TYPES ---
@@ -31,6 +33,14 @@ export interface DataState {
   rows: SheetRow[];
   headers: string[];
   lastUpdated: Date;
+}
+
+export interface StatMetric {
+  label: string;
+  value: string | number;
+  icon?: React.ReactNode;
+  trend?: string;
+  color?: string;
 }
 
 // --- SERVICE LAYER ---
@@ -496,7 +506,7 @@ export default function OnetReportPage() {
         key.includes('รหัส') || 
         key.includes('เลข') || 
         key.includes('ปี') || 
-        key.includes('ห้อง') ||
+        key.includes('ห้อง') || 
         key.includes('ชั้น')
     ) {
         return value;

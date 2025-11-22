@@ -23,6 +23,8 @@ import html2canvas from 'html2canvas';
 // @ts-ignore
 import { jsPDF } from 'jspdf';
 
+// --- TYPES ---
+
 export interface SheetRow {
   [key: string]: string;
 }
@@ -40,6 +42,8 @@ export interface StatMetric {
   trend?: string;
   color?: string;
 }
+
+// --- SERVICE LAYER ---
 
 const SHEET_ID = '19jf-Lx9OVRwh7j0ImcHBFG-dv0OBpeYyuoHl9irBWDg';
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
@@ -111,6 +115,8 @@ const fetchSheetData = async (): Promise<DataState> => {
     throw error;
   }
 };
+
+// --- COMPONENTS ---
 
 const LoadingSpinner: React.FC = () => (
   <div className="flex flex-col items-center justify-center h-64 space-y-4">
@@ -199,7 +205,7 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, data }) => {
     
     if (element) {
       try {
-        await new Promise(resolve => setTimeout(resolve, 800));
+        await new Promise(resolve => setTimeout(resolve, 800)); // Wait longer for mobile rendering
 
         const canvas = await html2canvas(element, {
           scale: 2,
@@ -211,6 +217,7 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, data }) => {
             if (clonedElement) {
                 clonedElement.style.backgroundColor = '#ffffff';
                 clonedElement.style.color = '#000000';
+                // Ensure width is A4-like for PDF capture regardless of screen size
                 clonedElement.style.width = '800px'; 
                 clonedElement.style.padding = '40px';
             }
@@ -254,6 +261,7 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, data }) => {
       <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
       
       <div className="relative bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-4xl h-[92vh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300">
+        {/* Action Bar */}
         <div className="flex items-center justify-between p-4 bg-slate-800 text-white sticky top-0 z-20 shadow-md shrink-0">
           <div className="flex items-center gap-2">
             <FileText size={18} className="text-sky-400" />
@@ -275,6 +283,7 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, data }) => {
         </div>
 
         <div className="overflow-y-auto flex-grow bg-slate-50">
+            {/* PDF CONTENT CONTAINER */}
             <div 
                 id="report-dashboard" 
                 className="p-6 sm:p-8 min-h-full" 
@@ -285,6 +294,7 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, data }) => {
                       <p className="mt-1 text-sm sm:text-base" style={{ color: '#64748b' }}>ปีการศึกษา 2567 | โรงเรียนบ้านตะโละ</p>
                 </div>
 
+                {/* Student Info */}
                 <div className="rounded-xl p-5 sm:p-6 mb-6 sm:mb-8 border" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
                     <h3 className="text-base sm:text-lg font-bold pb-3 mb-4 flex items-center gap-2 border-b" style={{ color: '#1e293b', borderColor: '#f1f5f9' }}>
                         <User size={20} style={{ color: '#0284c7' }} />
@@ -300,6 +310,7 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, data }) => {
                     </div>
                 </div>
 
+                {/* Scores */}
                 <div>
                     <h3 className="text-base sm:text-lg font-bold mb-4 sm:mb-5 flex items-center gap-2" style={{ color: '#1e293b' }}>
                         <Award size={20} style={{ color: '#f59e0b' }} />
@@ -334,6 +345,7 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, data }) => {
                                                         <span className="text-xs sm:text-sm opacity-60 font-semibold mb-1.5">/ {maxScore}</span>
                                                     </div>
                                                 </div>
+                                                {/* Progress bar specific to mobile/desktop layout adjustments if needed */}
                                             </div>
                                             <div className="mt-3 sm:mt-4 w-full rounded-full h-1.5 sm:h-2 overflow-hidden" style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}>
                                                     <div 
@@ -355,6 +367,7 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, data }) => {
                     )}
                 </div>
                 
+                {/* Footer PDF */}
                 <div className="mt-8 sm:mt-12 pt-6 border-t flex flex-col sm:flex-row justify-between items-start sm:items-end text-[10px] sm:text-xs gap-2" style={{ borderColor: '#e2e8f0', color: '#94a3b8' }}>
                     <div>
                         <p>เอกสารนี้จัดทำโดยระบบรายงานผลออนไลน์</p>
@@ -370,6 +383,8 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, data }) => {
     </div>
   );
 };
+
+// --- MAIN PAGE COMPONENT ---
 
 export default function OnetReportPage() {
   const [data, setData] = useState<DataState | null>(null);
@@ -424,4 +439,180 @@ export default function OnetReportPage() {
     return (
       <div className="min-h-screen bg-gray-50 font-sans">
         <Header />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <LoadingSpinner />
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 font-sans">
+        <Header />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="max-w-lg mx-auto bg-white shadow-xl rounded-2xl overflow-hidden p-8 text-center">
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
+              <AlertCircle className="h-8 w-8 text-red-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">มีปัญหาในการเชื่อมต่อ</h3>
+            <p className="text-red-500 font-medium mb-6 text-sm">{error}</p>
+            <button onClick={loadData} className="w-full px-4 py-3 bg-sky-600 text-white font-semibold rounded-xl hover:bg-sky-700 transition-colors flex items-center justify-center gap-2 shadow-lg">
+              <RefreshCcw size={20} /> ลองใหม่อีกครั้ง
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col pb-10">
+      <Header />
+      <DetailModal 
+        isOpen={!!selectedRow} 
+        onClose={() => setSelectedRow(null)} 
+        data={selectedRow} 
+      />
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 flex-grow w-full">
+        {/* Hero Section */}
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+          <div className="max-w-4xl mx-auto text-center space-y-4 sm:space-y-6">
+            <h2 className="text-xl md:text-4xl font-bold text-sky-600 tracking-tight">
+              O-NET Result 2567
+            </h2>
+            <p className="text-slate-500 text-sm md:text-lg max-w-2xl mx-auto">
+              ระบบตรวจสอบผลคะแนนสอบ O-NET ชั้นประถมศึกษาปีที่ 6
+            </p>
+            
+            <div className="relative shadow-xl shadow-sky-900/5 rounded-xl sm:rounded-2xl pt-2">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-sky-500" />
+              </div>
+              <input
+                type="text"
+                className="block w-full pl-12 pr-4 py-4 bg-white border-0 ring-1 ring-slate-200 rounded-xl sm:rounded-2xl text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-sky-500 focus:outline-none text-base sm:text-lg transition-all"
+                placeholder="พิมพ์ชื่อ หรือ นามสกุล..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                autoFocus
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
+          <div className="col-span-2 md:col-span-1">
+             <StatCard title="ทั้งหมด" value={data?.rows.length || 0} icon={<Database size={20} />} colorClass="bg-blue-50 text-blue-600" />
+          </div>
+          <StatCard title="พบข้อมูล" value={filteredRows.length} icon={<ListFilter size={20} />} colorClass="bg-amber-50 text-amber-600" />
+          <StatCard title="สถานะ" value="Online" icon={<RefreshCcw size={20} />} colorClass="bg-emerald-50 text-emerald-600" />
+        </div>
+
+        {!searchTerm ? (
+           <div className="py-12 flex flex-col items-center justify-center text-center text-slate-400">
+             <div className="bg-white p-4 sm:p-6 rounded-full shadow-sm border border-slate-100 mb-4">
+                <ArrowUpCircle size={32} className="text-slate-300 animate-bounce sm:w-12 sm:h-12" />
+             </div>
+             <h3 className="text-base sm:text-lg font-medium text-slate-600 mb-1">พิมพ์ชื่อเพื่อค้นหา</h3>
+             <p className="text-xs sm:text-sm">ระบบจะแสดงข้อมูลเมื่อมีการค้นหาเท่านั้น</p>
+           </div>
+        ) : (
+          <>
+          {/* --- DESKTOP VIEW (TABLE) --- */}
+          <div className="hidden md:block bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    {columns.map((header, idx) => (
+                      <th key={idx} scope="col" className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                        {header}
+                      </th>
+                    ))}
+                    <th scope="col" className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">ตรวจสอบ</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-200">
+                  {filteredRows.length > 0 ? (
+                    filteredRows.map((row, rowIndex) => (
+                      <tr key={rowIndex} onClick={() => setSelectedRow(row)} className="hover:bg-sky-50/50 transition-colors cursor-pointer group">
+                        {columns.map((header, colIndex) => (
+                          <td key={colIndex} className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                            {formatDisplayValue(header, row[header])}
+                          </td>
+                        ))}
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button className="text-sky-600 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 p-2 rounded-full transition-colors group-hover:scale-110">
+                            <ChevronRight size={18} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={columns.length + 1} className="px-6 py-12 text-center text-slate-500">
+                        ไม่พบข้อมูลที่ค้นหา
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* --- MOBILE VIEW (CARDS) --- */}
+          <div className="md:hidden space-y-4">
+             {filteredRows.length > 0 ? (
+                filteredRows.map((row, rowIndex) => {
+                  // Try to find intelligent display fields for the card
+                  const nameField = columns.find(c => c.includes('ชื่อ') || c.includes('name')) || columns[0];
+                  const idField = columns.find(c => c.includes('เลข') || c.includes('ID')) || columns[1];
+                  
+                  return (
+                    <div 
+                      key={rowIndex} 
+                      onClick={() => setSelectedRow(row)}
+                      className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 active:scale-[0.98] transition-transform cursor-pointer relative overflow-hidden"
+                    >
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                           <GraduationCap size={60} className="text-sky-600" />
+                        </div>
+                        
+                        <div className="relative z-10">
+                          <div className="mb-3">
+                            <p className="text-xs text-slate-400 uppercase tracking-wider font-medium mb-1">{idField}: {row[idField]}</p>
+                            <h3 className="text-lg font-bold text-slate-800">{row[nameField]}</h3>
+                          </div>
+                          
+                          <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-50">
+                             <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded-md">คลิกเพื่อดูผลสอบ</span>
+                             <div className="h-8 w-8 rounded-full bg-sky-50 flex items-center justify-center text-sky-600">
+                                <ChevronRight size={18} />
+                             </div>
+                          </div>
+                        </div>
+                    </div>
+                  );
+                })
+             ) : (
+                <div className="bg-white p-8 rounded-2xl text-center text-slate-400 border border-dashed border-slate-200">
+                   <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                   <p>ไม่พบข้อมูล</p>
+                </div>
+             )}
+          </div>
+          </>
+        )}
+      </main>
+
+      <footer className="py-6 border-t border-slate-200 bg-white/50 backdrop-blur-sm mt-auto">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <p className="text-slate-500 text-xs font-medium">พัฒนาโดย ฝ่ายวิชาการ โรงเรียนบ้านตะโละ</p>
+        </div>
+      </footer>
+    </div>
+  );
+}

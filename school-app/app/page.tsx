@@ -478,10 +478,10 @@ export default function OnetReportPage() {
         <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
           <div className="max-w-4xl mx-auto text-center space-y-4 sm:space-y-6">
             <h2 className="text-xl md:text-4xl font-bold text-sky-600 tracking-tight">
-              O-NET Result 2567
+              Ordinary National Educational Test : O-NET
             </h2>
             <p className="text-slate-500 text-sm md:text-lg max-w-2xl mx-auto">
-              ระบบตรวจสอบผลคะแนนสอบ O-NET ชั้นประถมศึกษาปีที่ 6
+              ระบบตรวจสอบผลการทดสอบทางการศึกษาระดับชาติขั้นพื้นฐาน ชั้นประถมศึกษาปีที่ 6 ปีการศึกษา 2567 รายบุคคล
             </p>
             
             <div className="relative shadow-xl shadow-sky-900/5 rounded-xl sm:rounded-2xl pt-2">
@@ -604,7 +604,7 @@ export default function OnetReportPage() {
 
       <footer className="py-6 border-t border-slate-200 bg-white/50 backdrop-blur-sm mt-auto">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-slate-500 text-xs font-medium">พัฒนาโดย ฝ่ายวิชาการ โรงเรียนบ้านตะโละ</p>
+          <p className="text-slate-500 text-xs font-medium">พัฒนาโดย ฝ่ายวิชาการ โรงเรียนบ้านตะโละ @2568</p>
         </div>
       </footer>
     </div>
